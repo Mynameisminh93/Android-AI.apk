@@ -1,65 +1,43 @@
 # LocalAI Android Starter
 
-Ứng dụng Android ưu tiên riêng tư, thiết kế cho chat offline với model GGUF trên điện thoại. Project này là **bản starter UI**, chưa phải bản AI inference hoàn chỉnh.
+Ứng dụng Android ưu tiên riêng tư, được chuẩn bị để tích hợp chat offline với model GGUF trên điện thoại.
 
 ## Trạng thái hiện tại
 
-- [x] Giao diện chat Android (Jetpack Compose)
-- [x] Lưu/xóa lịch sử chat trong bộ nhớ riêng ứng dụng
-- [x] Chọn tệp từ trình chọn tài liệu Android
-- [x] Màn hình thiết lập context, CPU threads, max tokens, temperature
-- [x] GitHub Actions build APK và lưu artifact; tag `v*` sẽ đính kèm APK vào Release
-- [ ] Native inference llama.cpp: **chưa tích hợp**
-- [ ] Nạp model GGUF và sinh token thật: **chưa hoạt động**
+- [x] Giao diện chat Android bằng Jetpack Compose
+- [x] Chọn tệp qua trình chọn tài liệu Android (bao gồm tệp model GGUF)
+- [x] GitHub Actions biên dịch debug APK và lưu artifact
+- [ ] Runtime suy luận llama.cpp/NDK: **chưa tích hợp**
+- [ ] Nạp model và sinh token thật: **chưa hoạt động**
 - [ ] Kiểm thử trên thiết bị Android thật: **chưa thực hiện**
 
-Không phát hành hay mô tả bản này như một AI chạy được cho đến khi hoàn tất các mục chưa làm.
+Chọn được tệp model không có nghĩa model đã được nạp hoặc chạy. Bản hiện tại chưa phải trợ lý AI hoạt động; giao diện sẽ thông báo rõ điều này.
 
-## Phần cứng khuyến nghị
+## Hướng tích hợp runtime
 
-Với điện thoại 4 GB RAM, bắt đầu bằng model nhỏ khoảng 1B–1.5B ở quantization Q4 và context 512–1024. Đây chỉ là điểm bắt đầu; RAM khả dụng thay đổi theo thiết bị, phiên bản Android và các ứng dụng nền. Không nhúng model vào APK; để người dùng chọn/tải riêng, vì file model có thể lớn hơn nhiều so với ứng dụng.
+Có thể dùng llama.cpp Android làm nền tảng tham khảo:
+- https://github.com/ggml-org/llama.cpp/tree/master/examples/llama.android
+- https://github.com/ggml-org/llama.cpp/blob/master/docs/android.md
 
-## Kết nối runtime thật
+Bước tích hợp cần thêm native build/NDK hoặc binding phù hợp, adapter Kotlin cho API inference, quản lý vòng đời model, hủy sinh token và chạy inference ngoài main thread. Cần kiểm tra API và giấy phép của phiên bản upstream được chọn.
 
-Dùng implementation Android chính thức của llama.cpp làm nền tảng runtime:
-https://github.com/ggml-org/llama.cpp/tree/master/examples/llama.android
+## Model và bộ nhớ
 
-Tài liệu upstream:
-https://github.com/ggml-org/llama.cpp/blob/master/docs/android.md
+Không nhúng model vào APK vì tệp GGUF thường lớn hơn nhiều so với ứng dụng. Người dùng nên chọn model từ nguồn đáng tin cậy và kiểm tra giấy phép. Model nhỏ hơn thường phù hợp hơn trên điện thoại ít RAM; mức dùng được phụ thuộc thiết bị và context.
 
-Tích hợp cần thay `RuntimeNotConfiguredEngine` bằng adapter gọi binding inference, sao chép hoặc mở model theo yêu cầu API của runtime, rồi kết nối luồng token vào UI. Kiểm tra API và giấy phép của phiên bản upstream mà bạn chọn. Đừng tải tệp model không rõ nguồn gốc; hãy xem giấy phép model trước khi phân phối.
+## Build Android APK
 
-## Build tự động trên GitHub
+Workflow Build Android APK chạy khi có commit trên nhánh main hoặc khi được chạy thủ công. Sau khi hoàn tất:
+1. Mở tab Actions của repository.
+2. Chọn lượt chạy có trạng thái thành công.
+3. Tải artifact LocalAI-debug-apk.
 
-1. Tạo repository GitHub mới, ví dụ `LocalAI-Android`.
-2. Giải nén project, commit và push toàn bộ file lên nhánh `main`.
-3. Mở tab **Actions** và bật workflow nếu GitHub yêu cầu.
-4. Mở workflow **Build Android APK**, chọn **Run workflow** hoặc push commit mới.
-5. Khi job hoàn tất, tải `LocalAI-debug-apk` trong phần Artifacts.
-6. Để tạo GitHub Release, tạo tag và push:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Workflow hiện phát hành **debug APK chưa ký release**, phù hợp thử nghiệm. Trước khi phân phối rộng rãi, hãy cấu hình ký APK release bằng GitHub Actions secrets; không commit keystore hoặc mật khẩu vào repository.
-
-## Build thủ công
-
-Cần JDK 17, Android SDK và Gradle 8.13. Từ thư mục gốc:
-
-```bash
-gradle assembleDebug
-```
-
-APK đầu ra dự kiến:
-`app/build/outputs/apk/debug/app-debug.apk`
+Đây là debug APK để thử nghiệm, chưa phải bản release ký chính thức.
 
 ## Quyền riêng tư
 
-Bản starter không khai báo quyền Internet và không gửi tin nhắn lên máy chủ. Khi thêm thư viện hoặc runtime, hãy kiểm tra lại quyền trong manifest và hành vi mạng của các dependency.
+Manifest hiện không khai báo quyền Internet; giao diện starter không gửi tin nhắn đến máy chủ. Khi thêm runtime hoặc thư viện, hãy kiểm tra lại quyền và hành vi mạng của các dependency.
 
 ## License
 
-Mã nguồn starter được phát hành theo MIT; các dependency và model có giấy phép riêng.
+Mã nguồn starter theo MIT. Các dependency và model có giấy phép riêng.
